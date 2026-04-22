@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab Lunch Schedule - Final</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+        :root {
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --surface-hover: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --turno1-color: #f59e0b; 
+            --turno1-bg: rgba(245, 158, 11, 0.15);
+            --turno2-color: #3b82f6; 
+            --turno2-bg: rgba(59, 130, 246, 0.15);
+            --accent-color: #10b981;
+            --border-radius-xl: 32px;
+            --border-radius-lg: 24px;
+            --border-radius-md: 16px;
+            --border-radius-sm: 8px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Menu Nomi */
+        .top-left-menu { position: absolute; top: 20px; left: 20px; z-index: 100; }
+        .menu-btn {
+            background-color: var(--surface-color);
+            color: var(--text-primary);
+            border: 1px solid var(--surface-hover);
+            padding: 0.75rem 1.25rem;
+            border-radius: var(--border-radius-md);
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .dropdown-panel {
+            position: absolute; top: 110%; left: 0;
+            background-color: var(--surface-color);
+            border-radius: var(--border-radius-md);
+            padding: 1rem; width: 250px;
+            display: none; flex-direction: column; gap: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .dropdown-panel.show { display: flex; }
+        .name-row { display: flex; align-items: center; background-color: var(--bg-color); padding: 0.5rem; border-radius: var(--border-radius-sm); }
+        .name-input { background: transparent; border: none; color: white; width: 100%; outline: none; }
+
+        header { text-align: center; padding-top: 2rem; }
+        h1 { font-size: 2.2rem; background: linear-gradient(45deg, var(--turno1-color), var(--turno2-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        .view-selector {
+            display: flex; justify-content: center; gap: 0.5rem;
+            background-color: var(--surface-color); padding: 0.5rem;
+            border-radius: var(--border-radius-lg); width: max-content; margin: 1rem auto;
+        }
+        .view-btn { background: none; border: none; color: var(--text-secondary); padding: 0.75rem 1.5rem; cursor: pointer; border-radius: var(--border-radius-md); transition: 0.3s; }
+        .view-btn.active { background-color: var(--surface-hover); color: white; }
+
+        #main-container { flex: 1; display: flex; justify-content: center; align-items: center; padding: 2rem; }
+        .view-content { display: none; width: 100%; max-width: 1200px; animation: fadeIn 0.3s; }
+        .view-content.active { display: flex; }
+
+        /* VISTA GIORNALIERA */
+        .daily-wrapper { display: flex; align-items: center; gap: 2rem; width: 100%; justify-content: center; }
+        .big-day-card { background-color: var(--surface-color); border-radius: var(--border-radius-xl); padding: 3rem; width: 100%; max-width: 600px; box-shadow: 0 20px 50px rgba(0,0,0,0.4); }
+        .day-header { text-align: center; font-size: 2rem; font-weight: 700; margin-bottom: 2rem; }
+        
+        .turno-box { border-radius: var(--border-radius-lg); padding: 1.5rem; margin-bottom: 1.5rem; }
+        .turno-1 { background-color: var(--turno1-bg); border: 1px solid rgba(245, 158, 11, 0.3); }
+        .turno-2 { background-color: var(--turno2-bg); border: 1px solid rgba(59, 130, 246, 0.3); }
+        .turno-title { font-weight: 600; font-size: 1.2rem; margin-bottom: 1rem; text-align: center; }
+        .turno-1 .turno-title { color: var(--turno1-color); }
+        .turno-2 .turno-title { color: var(--turno2-color); }
+
+        .people-container { display: flex; gap: 1rem; }
+        .person {
+            background-color: var(--surface-hover);
+            padding: 1.2rem; border-radius: var(--border-radius-md);
+            flex: 1; text-align: center; font-weight: 600; font-size: 1.1rem;
+            cursor: grab; border: 2px solid transparent; transition: 0.2s;
+            user-select: none;
+        }
+        .person:active { cursor: grabbing; }
+        .person.drag-over { border-color: var(--accent-color); transform: scale(1.05); background-color: #475569; }
+
+        /* VISTA SETTIMANALE */
+        .weekly-view { justify-content: center; gap: 1rem; }
+        .week-day-box { background-color: var(--surface-color); border-radius: var(--border-radius-lg); padding: 1.2rem; flex: 1; cursor: pointer; transition: 0.2s; text-align: center; }
+        .week-day-box:hover { background-color: var(--surface-hover); transform: translateY(-5px); }
+
+        /* VISTA MENSILE */
+        .monthly-view { flex-direction: column; background: var(--surface-color); padding: 1.5rem; border-radius: var(--border-radius-xl); }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; margin-top: 1rem; }
+        .cal-day { background: var(--bg-color); padding: 0.5rem; min-height: 90px; border-radius: 8px; cursor: pointer; }
+        .cal-day.weekend { opacity: 0.3; cursor: default; }
+        .cal-t1 { font-size: 0.7rem; color: var(--turno1-color); background: var(--turno1-bg); margin-top: 4px; border-radius: 4px; padding: 2px; }
+        .cal-t2 { font-size: 0.7rem; color: var(--turno2-color); background: var(--turno2-bg); margin-top: 2px; border-radius: 4px; padding: 2px; }
+
+        .nav-arrow { background: var(--surface-color); color: white; border: none; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div class="top-left-menu">
+        <button class="menu-btn" onclick="toggleMenu()">👥 Nomi <span>▼</span></button>
+        <div id="names-dropdown" class="dropdown-panel"></div>
+    </div>
+
+    <header>
+        <h1>Turni Laboratorio</h1>
+        <div class="view-selector">
+            <button class="view-btn active" id="btn-daily" onclick="setView('daily')">Giorno</button>
+            <button class="view-btn" id="btn-weekly" onclick="setView('weekly')">Settimana</button>
+            <button class="view-btn" id="btn-monthly" onclick="setView('monthly')">Mese</button>
+        </div>
+    </header>
+
+    <div id="main-container">
+        <div id="daily" class="view-content daily-view active">
+            <div class="daily-wrapper">
+                <button class="nav-arrow" onclick="navDay(-1)">❮</button>
+                <div class="big-day-card" id="daily-card"></div>
+                <button class="nav-arrow" onclick="navDay(1)">❯</button>
+            </div>
+        </div>
+
+        <div id="weekly" class="view-content weekly-view"></div>
+
+        <div id="monthly" class="view-content monthly-view">
+            <div style="display:flex; justify-content: space-between; align-items:center;">
+                <button class="nav-arrow" onclick="navMonth(-1)">❮</button>
+                <h2 id="month-title">Mese</h2>
+                <button class="nav-arrow" onclick="navMonth(1)">❯</button>
+            </div>
+            <div class="calendar-grid" id="calendar-grid"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- PERSISTENZA E STATO ---
+        let names = JSON.parse(localStorage.getItem('lab_names')) || ["Marco", "Matteo", "Laura", "Sofia"];
+        let scheduleMap = JSON.parse(localStorage.getItem('lab_schedule')) || {};
+        
+        let currentViewDate = new Date();
+        let currentViewMode = 'daily';
+
+        const basePerms = [
+            { t1: [0, 1], t2: [2, 3] }, { t1: [0, 2], t2: [1, 3] },
+            { t1: [0, 3], t2: [1, 2] }, { t1: [2, 3], t2: [0, 1] },
+            { t1: [1, 3], t2: [0, 2] }, { t1: [1, 2], t2: [0, 3] }
+        ];
+
+        function saveData() {
+            localStorage.setItem('lab_names', JSON.stringify(names));
+            localStorage.setItem('lab_schedule', JSON.stringify(scheduleMap));
+        }
+
+        // --- MOTORE TURNI ---
+        function formatDateKey(date) {
+            return `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`;
+        }
+
+        function ensureSchedule(date) {
+            let key = formatDateKey(date);
+            if (scheduleMap[key]) return;
+
+            // Generazione deterministica basata sul tempo se non esiste
+            let dayOfWeek = date.getDay();
+            if (dayOfWeek === 0 || dayOfWeek === 6) return;
+
+            // Uso un seed basato sui giorni passati da una data fissa per mantenere l'ordine
+            let epoch = new Date(2024, 0, 1);
+            let diff = Math.floor((date - epoch) / (1000 * 60 * 60 * 24));
+            let index = diff % basePerms.length;
+            
+            scheduleMap[key] = JSON.parse(JSON.stringify(basePerms[index]));
+            saveData();
+        }
+
+        // --- DRAG & DROP LOGIC ---
+        let draggedInfo = null;
+
+        function onDragStart(dateKey, turno, index) {
+            draggedInfo = { dateKey, turno, index };
+        }
+
+        function onDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+        function onDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+
+        function onDrop(e, targetTurno, targetIndex) {
+            e.preventDefault();
+            const { dateKey, turno: sTurno, index: sIndex } = draggedInfo;
+            
+            // Scambio
+            let dayData = scheduleMap[dateKey];
+            let temp = dayData[`t${sTurno}`][sIndex];
+            dayData[`t${sTurno}`][sIndex] = dayData[`t${targetTurno}`][targetIndex];
+            dayData[`t${targetTurno}`][targetIndex] = temp;
+
+            saveData();
+            renderAll();
+        }
+
+        // --- RENDERING ---
+        function renderDaily() {
+            const container = document.getElementById('daily-card');
+            if(currentViewDate.getDay() === 0) currentViewDate.setDate(currentViewDate.getDate()+1);
+            if(currentViewDate.getDay() === 6) currentViewDate.setDate(currentViewDate.getDate()+2);
+            
+            ensureSchedule(currentViewDate);
+            let key = formatDateKey(currentViewDate);
+            let d = scheduleMap[key];
+            
+            let label = currentViewDate.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+
+            container.innerHTML = `<div class="day-header">${label}</div>`;
+            [1, 2].forEach(tNum => {
+                let tDiv = document.createElement('div');
+                tDiv.className = `turno-box turno-${tNum}`;
+                tDiv.innerHTML = `<div class="turno-title">Turno ${tNum}</div>`;
+                let pCont = document.createElement('div');
+                pCont.className = 'people-container';
+
+                d[`t${tNum}`].forEach((pIdx, i) => {
+                    let pDiv = document.createElement('div');
+                    pDiv.className = 'person';
+                    pDiv.draggable = true;
+                    pDiv.innerText = names[pIdx];
+                    pDiv.ondragstart = () => onDragStart(key, tNum, i);
+                    pDiv.ondragover = onDragOver;
+                    pDiv.ondragleave = onDragLeave;
+                    pDiv.ondrop = (e) => onDrop(e, tNum, i);
+                    pCont.appendChild(pDiv);
+                });
+                tDiv.appendChild(pCont);
+                container.appendChild(tDiv);
+            });
+        }
+
+        function renderWeekly() {
+            const container = document.getElementById('weekly');
+            container.innerHTML = '';
+            let mon = new Date(currentViewDate);
+            mon.setDate(mon.getDate() - (mon.getDay() === 0 ? 6 : mon.getDay() - 1));
+
+            for(let i=0; i<5; i++){
+                let d = new Date(mon); d.setDate(mon.getDate()+i);
+                ensureSchedule(d);
+                let key = formatDateKey(d);
+                let data = scheduleMap[key];
+                container.innerHTML += `
+                    <div class="week-day-box" onclick="goToDay('${d}')">
+                        <div style="font-weight:700">${d.toLocaleDateString('it-IT', {weekday:'short'})} ${d.getDate()}</div>
+                        <div class="cal-t1">${names[data.t1[0]]} & ${names[data.t1[1]]}</div>
+                        <div class="cal-t2">${names[data.t2[0]]} & ${names[data.t2[1]]}</div>
+                    </div>`;
+            }
+        }
+
+        function renderMonthly() {
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+            let y = currentViewDate.getFullYear(), m = currentViewDate.getMonth();
+            document.getElementById('month-title').innerText = new Intl.DateTimeFormat('it-IT', {month:'long', year:'numeric'}).format(currentViewDate);
+
+            let first = new Date(y, m, 1).getDay() || 7;
+            for(let i=1; i<first; i++) grid.innerHTML += `<div class="cal-day" style="opacity:0"></div>`;
+            
+            for(let day=1; day<=new Date(y, m+1, 0).getDate(); day++) {
+                let d = new Date(y, m, day);
+                let key = formatDateKey(d);
+                let isWE = d.getDay() === 0 || d.getDay() === 6;
+                if(!isWE) ensureSchedule(d);
+                let data = scheduleMap[key];
+
+                grid.innerHTML += `
+                    <div class="cal-day ${isWE?'weekend':''}" onclick="${!isWE?`goToWeek('${d}')`:''}">
+                        <div style="font-size:0.8rem; opacity:0.6">${day}</div>
+                        ${data ? `<div class="cal-t1">${names[data.t1[0]]}, ${names[data.t1[1]]}</div><div class="cal-t2">${names[data.t2[0]]}, ${names[data.t2[1]]}</div>` : ''}
+                    </div>`;
+            }
+        }
+
+        // --- NAVIGAZIONE ---
+        function setView(m) {
+            currentViewMode = m;
+            document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.id === `btn-${m}`));
+            document.querySelectorAll('.view-content').forEach(v => v.classList.toggle('active', v.id === m));
+            renderAll();
+        }
+
+        function navDay(dir) { currentViewDate.setDate(currentViewDate.getDate()+dir); renderAll(); }
+        function navMonth(dir) { currentViewDate.setMonth(currentViewDate.getMonth()+dir); renderAll(); }
+        function goToDay(d) { currentViewDate = new Date(d); setView('daily'); }
+        function goToWeek(d) { currentViewDate = new Date(d); setView('weekly'); }
+
+        function renderAll() {
+            if(currentViewMode === 'daily') renderDaily();
+            else if(currentViewMode === 'weekly') renderWeekly();
+            else renderMonthly();
+        }
+
+        function toggleMenu() { document.getElementById('names-dropdown').classList.toggle('show'); }
+        
+        function initNames() {
+            const menu = document.getElementById('names-dropdown');
+            names.forEach((n, i) => {
+                let div = document.createElement('div');
+                div.className = 'name-row';
+                div.innerHTML = `<input class="name-input" value="${n}" onchange="names[${i}]=this.value; saveData(); renderAll();"> ✏️`;
+                menu.appendChild(div);
+            });
+        }
+
+        initNames();
+        renderAll();
+    </script>
+</body>
+</html>
